@@ -25,6 +25,7 @@ echo "正在為 $ENV_TYPE 環境設置配置文件..."
 mkdir -p "$HOME/.config/wezterm"
 mkdir -p "$HOME/.oh-my-zsh/custom/themes"
 mkdir -p "$HOME/.oh-my-zsh/custom/plugins"
+mkdir -p "$HOME/.local/share/fonts"
 
 # 檢查該環境類型的文件夾是否存在
 if [[ ! -d "$DOTFILES_DIR/$ENV_TYPE" ]]; then
@@ -50,6 +51,37 @@ for file in "$DOTFILES_DIR/$ENV_TYPE"/*; do
         echo "跳過未識別的文件 $filename"
     fi
 done
+
+# 安裝 Nerd Font 字體
+install_nerd_fonts() {
+    echo "安裝 JetBrainsMono Nerd Font..."
+    
+    # 創建臨時目錄
+    TEMP_DIR=$(mktemp -d)
+    
+    # 下載字體
+    echo "下載 JetBrainsMono Nerd Font..."
+    curl -fL -o "$TEMP_DIR/JetBrainsMono.zip" https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/JetBrainsMono.zip
+    
+    # 解壓字體
+    echo "解壓字體文件..."
+    unzip -q "$TEMP_DIR/JetBrainsMono.zip" -d "$TEMP_DIR/fonts"
+    
+    # 複製字體到字體目錄
+    echo "安裝字體..."
+    cp "$TEMP_DIR/fonts/"*.ttf "$HOME/.local/share/fonts/"
+    
+    # 清理臨時目錄
+    rm -rf "$TEMP_DIR"
+    
+    # 更新字體緩存
+    echo "更新字體緩存..."
+    if command -v fc-cache &> /dev/null; then
+        fc-cache -f
+    fi
+    
+    echo "JetBrainsMono Nerd Font 已安裝"
+}
 
 # 安裝 Oh My Zsh 和插件
 install_oh_my_zsh() {
@@ -97,7 +129,7 @@ install_dependencies() {
             if command -v apt-get &> /dev/null; then
                 echo "使用 apt 安裝軟件包..."
                 sudo apt-get update
-                sudo apt-get install -y zsh fzf
+                sudo apt-get install -y zsh fzf unzip curl
                 
                 # 檢查是否需要安裝 bat
                 if ! command -v batcat &> /dev/null && ! command -v bat &> /dev/null; then
@@ -129,7 +161,7 @@ install_dependencies() {
             if command -v apt-get &> /dev/null; then
                 echo "使用 apt 安裝軟件包..."
                 sudo apt-get update
-                sudo apt-get install -y zsh fzf
+                sudo apt-get install -y zsh fzf unzip curl fontconfig
                 
                 # 檢查是否需要安裝 bat
                 if ! command -v batcat &> /dev/null && ! command -v bat &> /dev/null; then
@@ -196,7 +228,7 @@ install_dependencies() {
                 fi
             elif command -v dnf &> /dev/null; then
                 echo "使用 dnf 安裝軟件包..."
-                sudo dnf install -y zsh fzf bat fd-find
+                sudo dnf install -y zsh fzf bat fd-find unzip curl fontconfig
                 # 為 Fedora/RHEL 添加其他軟件包安裝
             else
                 echo "不支持的軟件包管理器。請手動安裝依賴。"
@@ -211,6 +243,10 @@ install_dependencies() {
             
             echo "使用 Homebrew 安裝軟件包..."
             brew install zsh wezterm fzf bat eza zoxide fd
+            # 使用 Homebrew 安裝 JetBrainsMono Nerd Font
+            brew tap homebrew/cask-fonts
+            brew install --cask font-jetbrains-mono-nerd-font
+            return  # 在 macOS 上用 Homebrew 安裝字體後，不需要再運行 install_nerd_fonts 函數
             ;;
     esac
 }
@@ -218,6 +254,11 @@ install_dependencies() {
 # 執行安裝
 install_oh_my_zsh
 install_dependencies
+
+# 安裝 Nerd Font 字體 (macOS 已在 install_dependencies 中處理)
+if [[ "$ENV_TYPE" != "macos" ]]; then
+    install_nerd_fonts
+fi
 
 # 如果尚未安裝 NVM，則安裝
 if [ ! -d "$HOME/.nvm" ]; then
@@ -239,3 +280,4 @@ echo "==========================================="
 echo "安裝已成功完成！" 
 echo "===========================================" 
 echo "請登出並重新登入以應用所有更改。"
+echo "如果字體顯示仍有問題，請嘗試手動設置終端字體為 JetBrainsMono Nerd Font Mono。"
