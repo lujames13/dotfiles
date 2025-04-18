@@ -141,17 +141,53 @@ install_dependencies() {
                     sudo apt-get install -y fd-find
                 fi
                 
-                # 安裝 WezTerm
+                # 安裝 WezTerm - 改用 GitHub 最新版本的安裝方式
                 if ! command -v wezterm &> /dev/null; then
                     echo "安裝 WezTerm..."
-                    curl -LO https://github.com/wez/wezterm/releases/download/nightly/wezterm-nightly.Ubuntu20.04.deb
-                    sudo apt install -y ./wezterm-nightly.Ubuntu20.04.deb
-                    rm wezterm-nightly.Ubuntu20.04.deb
+                    # 檢測系統架構
+                    ARCH=$(uname -m)
+                    if [[ "$ARCH" == "x86_64" ]]; then
+                        # 檢測 Linux 發行版
+                        if [[ -f /etc/os-release ]]; then
+                            source /etc/os-release
+                            if [[ "$ID" == "debian" || "$ID" == "ubuntu" || "$ID_LIKE" == *"debian"* ]]; then
+                                echo "檢測到 Debian/Ubuntu 系列發行版，使用 AppImage 安裝 WezTerm"
+                                # 使用 AppImage 版本，避免 libssl 依賴問題
+                                mkdir -p ~/.local/bin
+                                curl -L -o ~/.local/bin/wezterm https://github.com/wez/wezterm/releases/download/nightly/WezTerm-nightly-Ubuntu20.04.AppImage
+                                chmod +x ~/.local/bin/wezterm
+                                echo "WezTerm AppImage 已安裝到 ~/.local/bin/wezterm"
+                                echo "請確保 ~/.local/bin 在您的 PATH 中"
+                                # 添加到 PATH
+                                if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+                                    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+                                    echo "已添加 ~/.local/bin 到 PATH"
+                                fi
+                            else
+                                echo "不支持的 Linux 發行版，請手動安裝 WezTerm"
+                            fi
+                        else
+                            echo "無法確定 Linux 發行版，請手動安裝 WezTerm"
+                        fi
+                    else
+                        echo "不支持的系統架構 $ARCH，請手動安裝 WezTerm"
+                    fi
                 fi
                 
                 # 安裝 Eza
                 if ! command -v eza &> /dev/null; then
-                    sudo apt install -y eza || echo "eza 不在軟件庫中"
+                    if command -v cargo &> /dev/null; then
+                        cargo install eza
+                    else
+                        echo "安裝 cargo (Rust 包管理器)..."
+                        sudo apt install -y cargo
+                        if [ $? -eq 0 ]; then
+                            echo "使用 cargo 安裝 eza..."
+                            cargo install eza
+                        else
+                            echo "eza 不在軟件庫中，無法安裝 cargo，請手動安裝 eza"
+                        fi
+                    fi
                 fi
                 
                 # 安裝 Zoxide
@@ -186,7 +222,11 @@ install_dependencies
 # 如果尚未安裝 NVM，則安裝
 if [ ! -d "$HOME/.nvm" ]; then
     echo "安裝 nvm..."
+    export NVM_DIR="$HOME/.nvm"
+    mkdir -p "$NVM_DIR"
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+else
+    echo "NVM 已安裝"
 fi
 
 # 如果 Zsh 不是默認的 shell，則將其設置為默認
