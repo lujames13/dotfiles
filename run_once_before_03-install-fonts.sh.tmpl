@@ -1,0 +1,139 @@
+#!/bin/bash
+#
+# run_once_before_03-install-fonts.sh.tmpl
+# 安裝 JetBrains Mono Nerd Font
+#
+
+set -e
+
+print_status() { echo -e "\033[0;34m[FONTS]\033[0m $1"; }
+print_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
+print_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
+print_error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+
+{{- if eq .chezmoi.os "darwin" }}
+# macOS - Install JetBrains Mono Nerd Font using Homebrew
+print_status "Installing JetBrains Mono Nerd Font on macOS..."
+
+if command_exists brew; then
+    # Check if font is already installed
+    if brew list --cask font-jetbrains-mono-nerd-font >/dev/null 2>&1; then
+        print_success "JetBrains Mono Nerd Font already installed"
+    else
+        brew install --cask font-jetbrains-mono-nerd-font
+        print_success "JetBrains Mono Nerd Font installed via Homebrew"
+    fi
+else
+    print_error "Homebrew not found. Cannot install font automatically."
+    print_warning "Please install JetBrains Mono Nerd Font manually from:"
+    print_warning "https://github.com/ryanoasis/nerd-fonts/releases"
+fi
+
+{{- else if eq .chezmoi.os "linux" }}
+# Linux - Download and install JetBrains Mono Nerd Font
+print_status "Installing JetBrains Mono Nerd Font on Linux..."
+
+FONT_DIR="$HOME/.local/share/fonts"
+FONT_NAME="JetBrainsMono"
+NERD_FONTS_VERSION="v3.1.1"
+
+# Create fonts directory
+mkdir -p "$FONT_DIR"
+
+# Check if font is already installed
+if ls "$FONT_DIR"/*JetBrains* >/dev/null 2>&1; then
+    print_success "JetBrains Mono Nerd Font already installed"
+else
+    print_status "Downloading JetBrains Mono Nerd Font..."
+    
+    # Download the font archive
+    FONT_ZIP="/tmp/JetBrainsMono.zip"
+    curl -fLo "$FONT_ZIP" \
+        "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONTS_VERSION}/JetBrainsMono.zip"
+    
+    # Extract and install
+    print_status "Installing font files..."
+    unzip -o "$FONT_ZIP" -d "/tmp/JetBrainsMono"
+    find "/tmp/JetBrainsMono" -name "*.ttf" -exec cp {} "$FONT_DIR" \;
+    
+    # Clean up
+    rm -rf "$FONT_ZIP" "/tmp/JetBrainsMono"
+    
+    # Refresh font cache
+    if command_exists fc-cache; then
+        print_status "Refreshing font cache..."
+        fc-cache -fv "$FONT_DIR"
+    fi
+    
+    print_success "JetBrains Mono Nerd Font installed"
+fi
+
+{{- else if eq .chezmoi.os "windows" }}
+# Windows - Install JetBrains Mono Nerd Font
+print_status "Installing JetBrains Mono Nerd Font on Windows..."
+
+# Check if font is installed (rough check)
+if powershell.exe -Command "Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts' | Select-String 'JetBrains'" >/dev/null 2>&1; then
+    print_success "JetBrains Mono Nerd Font appears to be installed"
+else
+    print_status "Downloading JetBrains Mono Nerd Font..."
+    
+    NERD_FONTS_VERSION="v3.1.1"
+    FONT_ZIP="/tmp/JetBrainsMono.zip"
+    
+    # Download font
+    curl -fLo "$FONT_ZIP" \
+        "https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONTS_VERSION}/JetBrainsMono.zip"
+    
+    # Extract to temp directory
+    unzip -o "$FONT_ZIP" -d "/tmp/JetBrainsMono"
+    
+    # Install fonts using PowerShell
+    print_status "Installing font files..."
+    powershell.exe -Command "
+        \$fonts = Get-ChildItem '/tmp/JetBrainsMono/*.ttf'
+        foreach (\$font in \$fonts) {
+            \$fontName = \$font.BaseName
+            \$fontPath = \$font.FullName
+            \$shell = New-Object -ComObject Shell.Application
+            \$fontsFolder = \$shell.Namespace(0x14)
+            \$fontsFolder.CopyHere(\$fontPath, 0x10)
+        }
+    "
+    
+    # Clean up
+    rm -rf "$FONT_ZIP" "/tmp/JetBrainsMono"
+    
+    print_success "JetBrains Mono Nerd Font installed"
+    print_warning "You may need to restart applications to see the new font"
+fi
+
+{{- end }}
+
+# Verify installation
+print_status "Verifying font installation..."
+
+{{- if eq .chezmoi.os "darwin" }}
+if ls /System/Library/Fonts/*JetBrains* ~/Library/Fonts/*JetBrains* /Library/Fonts/*JetBrains* 2>/dev/null | grep -q JetBrains; then
+    print_success "Font installation verified"
+else
+    print_warning "Font verification failed, but this might be normal"
+fi
+
+{{- else if eq .chezmoi.os "linux" }}
+if command_exists fc-list; then
+    if fc-list | grep -i "jetbrains" | grep -i "nerd" >/dev/null; then
+        print_success "Font installation verified"
+    else
+        print_warning "Font not found in fc-list, but installation may still be successful"
+    fi
+fi
+
+{{- else if eq .chezmoi.os "windows" }}
+print_success "Font installation completed - restart applications to use the new font"
+
+{{- end }}
+
+print_success "JetBrains Mono Nerd Font installation completed!"

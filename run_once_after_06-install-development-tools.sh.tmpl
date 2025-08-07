@@ -1,0 +1,133 @@
+#!/bin/bash
+#
+# run_once_after_06-install-development-tools.sh.tmpl
+# 安裝開發環境工具 (可選，只在 macOS 和 Linux 執行)
+#
+
+{{- if ne .chezmoi.os "windows" }}
+
+set -e
+
+print_status() { echo -e "\033[0;34m[DEV-TOOLS]\033[0m $1"; }
+print_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
+print_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+
+# Install NVM (Node Version Manager)
+if [[ ! -d "$HOME/.nvm" ]]; then
+    read -p "Install NVM (Node Version Manager)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing NVM..."
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+        print_success "NVM installed"
+        print_warning "Restart terminal or run 'source ~/.nvm/nvm.sh' to use NVM"
+    fi
+else
+    print_success "NVM already installed"
+fi
+
+# Install Miniconda
+{{- $condaPath := "" }}
+{{- if eq .chezmoi.os "darwin" }}
+  {{- $condaPath = "$HOME/miniconda" }}
+{{- else }}
+  {{- $condaPath = "$HOME/miniconda3" }}
+{{- end }}
+
+if [[ ! -d "{{ $condaPath }}" ]]; then
+    read -p "Install Miniconda? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing Miniconda..."
+        {{- if eq .chezmoi.os "darwin" }}
+        # Detect architecture for macOS
+        if [[ $(uname -m) == "arm64" ]]; then
+            curl -o ~/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+        else
+            curl -o ~/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+        fi
+        {{- else if eq .chezmoi.os "linux" }}
+        curl -o ~/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+        {{- end }}
+        bash ~/miniconda.sh -b -p "{{ $condaPath }}"
+        rm ~/miniconda.sh
+        print_success "Miniconda installed"
+        print_warning "Restart terminal to use conda"
+    fi
+else
+    print_success "Miniconda already installed"
+fi
+
+{{- if eq .chezmoi.os "darwin" }}
+# Install Google Cloud SDK (macOS specific)
+if [[ ! -d "$HOME/Downloads/google-cloud-sdk" ]]; then
+    read -p "Install Google Cloud SDK? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing Google Cloud SDK..."
+        cd ~/Downloads
+        if [[ $(uname -m) == "arm64" ]]; then
+            curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-latest-darwin-arm.tar.gz
+            tar -xf google-cloud-cli-latest-darwin-arm.tar.gz
+            rm google-cloud-cli-latest-darwin-arm.tar.gz
+        else
+            curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-latest-darwin-x86_64.tar.gz
+            tar -xf google-cloud-cli-latest-darwin-x86_64.tar.gz
+            rm google-cloud-cli-latest-darwin-x86_64.tar.gz
+        fi
+        ./google-cloud-sdk/install.sh --quiet
+        print_success "Google Cloud SDK installed"
+    fi
+else
+    print_success "Google Cloud SDK already installed"
+fi
+{{- end }}
+
+# Install common development tools
+{{- if eq .chezmoi.os "darwin" }}
+if command_exists brew; then
+    read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing development tools..."
+        brew install git curl wget neofetch
+        print_success "Development tools installed"
+    fi
+fi
+{{- else if eq .chezmoi.os "linux" }}
+if command_exists apt-get; then
+    read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing development tools..."
+        sudo apt-get install -y git curl wget neofetch build-essential
+        print_success "Development tools installed"
+    fi
+elif command_exists dnf; then
+    read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing development tools..."
+        sudo dnf install -y git curl wget neofetch gcc gcc-c++ make
+        print_success "Development tools installed"
+    fi
+elif command_exists pacman; then
+    read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing development tools..."
+        sudo pacman -S --noconfirm git curl wget neofetch base-devel
+        print_success "Development tools installed"
+    fi
+fi
+{{- end }}
+
+print_success "Development tools setup completed!"
+
+{{- else }}
+
+echo "Windows detected - Development tools installation skipped (use WSL instead)"
+
+{{- end }}

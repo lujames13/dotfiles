@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+# run_after_07-setup-wezterm-config.sh.tmpl
+# 設置 WezTerm 配置並驗證字體
+#
+
+set -e
+
+print_status() { echo -e "\033[0;34m[WEZTERM-CONFIG]\033[0m $1"; }
+print_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
+print_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+
+print_status "Setting up WezTerm configuration..."
+
+# Verify WezTerm installation
+if ! command_exists wezterm; then
+    print_warning "WezTerm not found in PATH. Configuration applied but may need restart to take effect."
+else
+    print_success "WezTerm found: $(wezterm --version | head -1)"
+fi
+
+# Verify font installation
+print_status "Verifying JetBrainsMono Nerd Font installation..."
+
+{{- if eq .chezmoi.os "darwin" }}
+if ls ~/Library/Fonts/*JetBrains* 2>/dev/null | grep -q "JetBrains"; then
+    print_success "JetBrainsMono Nerd Font found in ~/Library/Fonts/"
+    
+    # List available JetBrains fonts
+    print_status "Available JetBrains font variants:"
+    ls ~/Library/Fonts/ | grep -i jetbrains | grep -E "(Regular|Mono)" | head -3 | sed 's/^/  /'
+else
+    print_warning "JetBrainsMono Nerd Font not found. WezTerm may fall back to default font."
+fi
+
+{{- else if eq .chezmoi.os "linux" }}
+FONT_DIR="$HOME/.local/share/fonts"
+if ls "$FONT_DIR"/*JetBrains* 2>/dev/null | grep -q "JetBrains"; then
+    print_success "JetBrainsMono Nerd Font found in $FONT_DIR"
+    
+    # Refresh font cache if needed
+    if command_exists fc-cache; then
+        print_status "Refreshing font cache..."
+        fc-cache -fv "$FONT_DIR" >/dev/null 2>&1
+        print_success "Font cache refreshed"
+    fi
+    
+    # Verify with fc-list if available
+    if command_exists fc-list; then
+        if fc-list | grep -i "jetbrains" >/dev/null; then
+            print_success "Font verified with fc-list"
+        fi
+    fi
+else
+    print_warning "JetBrainsMono Nerd Font not found. WezTerm may fall back to default font."
+fi
+
+{{- else if eq .chezmoi.os "windows" }}
+print_status "Font verification on Windows requires manual check"
+print_status "WezTerm configuration has been applied"
+
+{{- end }}
+
+# Verify WezTerm config file
+if [[ -f "$HOME/.wezterm.lua" ]]; then
+    print_success "WezTerm configuration file created: ~/.wezterm.lua"
+    
+    # Show key configuration details
+    print_status "Configuration summary:"
+    grep -E "font.*=" ~/.wezterm.lua | head -1 | sed 's/^/  /'
+    grep -E "font_size.*=" ~/.wezterm.lua | head -1 | sed 's/^/  /'
+    
+    # Test configuration syntax if wezterm is available
+    if command_exists wezterm; then
+        if wezterm --config-file ~/.wezterm.lua --version >/dev/null 2>&1; then
+            print_success "WezTerm configuration syntax is valid"
+        else
+            print_warning "WezTerm configuration may have syntax issues"
+        fi
+    fi
+else
+    print_warning "WezTerm configuration file not found"
+fi
+
+print_success "WezTerm configuration setup completed!"
+
+{{- if eq .chezmoi.os "darwin" }}
+print_status "Note: If WezTerm is already running, restart it to apply the new configuration"
+{{- else if eq .chezmoi.os "linux" }}
+print_status "Note: If WezTerm is already running, restart it to apply the new configuration"
+{{- else if eq .chezmoi.os "windows" }}
+print_status "Note: Restart WezTerm to apply the new configuration"
+{{- end }}
