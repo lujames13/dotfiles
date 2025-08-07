@@ -83,40 +83,237 @@ export BAT_COMMAND="bat.exe"
 {{- end }}
 
 #
-# ----- FZF Setup -----
+# ----- Enhanced FZF Setup with cd ** functionality (fzf 0.29 compatible) -----
 #
-if command -v $FD_COMMAND &> /dev/null; then
-  export FZF_DEFAULT_COMMAND="$FD_COMMAND --hidden --strip-cwd-prefix --exclude .git"
-  export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-  export FZF_ALT_C_COMMAND="$FD_COMMAND --type=d --hidden --strip-cwd-prefix --exclude .git"
-  
-  _fzf_compgen_path() { $FD_COMMAND --hidden --exclude .git . "$1" }
-  _fzf_compgen_dir() { $FD_COMMAND --type=d --hidden --exclude .git . "$1" }
-fi
 
-# Load FZF if available
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+if command -v fzf &> /dev/null; then
+  # Configure fzf to use fd instead of find
+  if command -v $FD_COMMAND &> /dev/null; then
+    export FZF_DEFAULT_COMMAND="$FD_COMMAND --hidden --strip-cwd-prefix --exclude .git"
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND="$FD_COMMAND --type=d --hidden --strip-cwd-prefix --exclude .git"
+    
+    # Use fd for path completion (enables ** completion)
+    _fzf_compgen_path() { 
+      $FD_COMMAND --hidden --exclude .git . "$1" 
+    }
+    
+    # Use fd for directory completion (enables cd **<Tab>)
+    _fzf_compgen_dir() { 
+      $FD_COMMAND --type=d --hidden --exclude .git . "$1" 
+    }
+  fi
+
+  # Enhanced FZF theme and options
+  fg="#CBE0F0"
+  bg="#011628"
+  bg_highlight="#143652"
+  purple="#B388FF"
+  blue="#06BCE4"
+  cyan="#2CF9ED"
+
+  export FZF_DEFAULT_OPTS="--color=fg:${fg},bg:${bg},hl:${purple},fg+:${fg},bg+:${bg_highlight},hl+:${purple},info:${blue},prompt:${cyan},pointer:${cyan},marker:${cyan},spinner:${cyan},header:${cyan} --height 50% --layout=default --border --cycle --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+
+  # Enhanced preview setup with eza and bat
+  if command -v eza &> /dev/null && command -v $BAT_COMMAND &> /dev/null; then
+    show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; else $BAT_COMMAND -n --color=always --line-range :500 {}; fi"
+    
+    export FZF_CTRL_T_OPTS="--preview '$show_file_or_dir_preview'"
+    export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
+    
+    # Enhanced completion with preview for different commands
+    _fzf_comprun() {
+      local command=$1
+      shift
+      case "$command" in
+        cd)           fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
+        export|unset) fzf --preview "eval 'echo \${$1}'"         "$@" ;;
+        ssh)          fzf --preview 'dig {}'                   "$@" ;;
+        *)            fzf --preview "$show_file_or_dir_preview" "$@" ;;
+      esac
+    }
+  fi
+
+  # Load fzf key bindings and completion (CRITICAL for cd ** functionality)
+  # Method 1: Try to source the completion and key-bindings files directly
+  
+  {{- if eq .chezmoi.os "darwin" }}
+  # macOS paths (Homebrew)
+  if [[ -f /opt/homebrew/share/fzf/shell/completion.zsh ]]; then
+    source /opt/homebrew/share/fzf/shell/completion.zsh
+  elif [[ -f /usr/local/share/fzf/shell/completion.zsh ]]; then
+    source /usr/local/share/fzf/shell/completion.zsh
+  fi
+  
+  if [[ -f /opt/homebrew/share/fzf/shell/key-bindings.zsh ]]; then
+    source /opt/homebrew/share/fzf/shell/key-bindings.zsh
+  elif [[ -f /usr/local/share/fzf/shell/key-bindings.zsh ]]; then
+    source /usr/local/share/fzf/shell/key-bindings.zsh
+  fi
+  {{- else if eq .chezmoi.os "linux" }}
+  # Linux paths
+  if [[ -f /usr/share/fzf/completion.zsh ]]; then
+    source /usr/share/fzf/completion.zsh
+  elif [[ -f /usr/share/zsh/site-functions/_fzf ]]; then
+    # Some distributions install differently
+    autoload -U _fzf
+  fi
+  
+  if [[ -f /usr/share/fzf/key-bindings.zsh ]]; then
+    source /usr/share/fzf/key-bindings.zsh
+  fi
+  {{- end }}
+  
+  # Method 2: Fallback to ~/.fzf.zsh if it exists
+  if [[ -f ~/.fzf.zsh ]]; then
+    source ~/.fzf.zsh
+  fi
+  
+  # Method 3: Manual setup if no completion files found (last resort)
+  if ! typeset -f _fzf_completion &> /dev/null; then
+    # Setup manual completion trigger for **
+    __fzf_generic_path_completion() {
+      local base lbuf cmd compgen fzf_opts suffix tail dir leftover matches
+      base=$1
+      lbuf=$2
+      cmd=$3
+      compgen=$4
+      fzf_opts=$5
+      suffix=$6
+      tail=$7
+
+      setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
+      
+      eval "base=$base"
+      [[ $base = *"/"* ]] && dir="$base"
+      while [ 1 ]; do
+        if [[ -z "$dir" ]] || [[ -d ${dir} ]]; then
+          leftover=${base/#"$dir"}
+          leftover=${leftover/#\/}
+          [ -z "$dir" ] && dir='.'
+          [ "$dir" != "/" ] && dir="${dir/%\//}"
+          matches=$(eval "$compgen $(printf %q "$dir")" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=tab:down,btab:up $FZF_DEFAULT_OPTS $fzf_opts" fzf --query "$leftover" | while read item; do
+            echo -n "${(q)item}$suffix "
+          done)
+          matches=${matches% }
+          if [ -n "$matches" ]; then
+            LBUFFER="$lbuf$matches$tail"
+          fi
+          zle reset-prompt
+          break
+        fi
+        dir=$(dirname "$dir")
+        dir=${dir%/}/
+      done
+    }
+
+    _fzf_dir_completion() {
+      __fzf_generic_path_completion "$1" "$2" _fzf_dir_completion \
+        "$FZF_ALT_C_COMMAND" "$FZF_ALT_C_OPTS" "/" ""
+    }
+
+    _fzf_file_completion() {
+      __fzf_generic_path_completion "$1" "$2" _fzf_path_completion \
+        "$FZF_CTRL_T_COMMAND" "$FZF_CTRL_T_OPTS" "" ""
+    }
+
+    # Bind ** completion
+    fzf-completion() {
+      local tokens cmd prefix trigger tail matches lbuf d_cmds
+      setopt localoptions noshwordsplit noksh_arrays noposixbuiltins
+
+      # Tokenize the current line
+      eval "tokens=(\${(z)LBUFFER})"
+      [ ${#tokens} -lt 1 ] && zle ${fzf_default_completion:-expand-or-complete} && return
+
+      cmd=$tokens[1]
+
+      # Check for ** trigger
+      if [[ "$LBUFFER" == *'**' ]]; then
+        # Remove ** from the end
+        lbuf=${LBUFFER%'**'}
+        
+        # Check if it's a directory completion command
+        d_cmds=${FZF_COMPLETION_DIR_COMMANDS:-cd pushd rmdir}
+        if [[ " $d_cmds " == *" $cmd "* ]]; then
+          _fzf_dir_completion "" "$lbuf"
+        else
+          _fzf_file_completion "" "$lbuf"
+        fi
+        return
+      fi
+
+      # Fall back to default completion
+      zle ${fzf_default_completion:-expand-or-complete}
+    }
+
+    # Setup widgets and bindings
+    zle -N fzf-completion
+    bindkey '^I' fzf-completion
+    
+    # Key bindings for Ctrl+T, Ctrl+R, Alt+C
+    __fzf_select__() {
+      local cmd="${FZF_CTRL_T_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune -o -type f -print -o -type d -print -o -type l -print 2> /dev/null | cut -b3-"}"
+      setopt localoptions pipefail no_aliases 2> /dev/null
+      local item
+      eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=tab:down,btab:up $FZF_DEFAULT_OPTS $FZF_CTRL_T_OPTS" fzf -m "$@" | while read item; do
+        echo -n "${(q)item} "
+      done
+      local ret=$?
+      echo
+      return $ret
+    }
+
+    fzf-file-widget() {
+      LBUFFER="${LBUFFER}$(__fzf_select__)"
+      local ret=$?
+      zle reset-prompt
+      return $ret
+    }
+    zle -N fzf-file-widget
+    bindkey '^T' fzf-file-widget
+
+    # History widget
+    fzf-history-widget() {
+      local selected num
+      setopt localoptions noglobsubst noposixbuiltins pipefail no_aliases 2> /dev/null
+      selected=( $(fc -rl 1 | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=tab:down,btab:up $FZF_DEFAULT_OPTS $FZF_CTRL_R_OPTS" fzf --query="$LBUFFER" +m) )
+      local ret=$?
+      if [ -n "$selected" ]; then
+        num=$selected[1]
+        if [ -n "$num" ]; then
+          zle vi-fetch-history -n $num
+        fi
+      fi
+      zle reset-prompt
+      return $ret
+    }
+    zle -N fzf-history-widget
+    bindkey '^R' fzf-history-widget
+
+    # Directory widget
+    __fzf_cd__() {
+      local cmd="${FZF_ALT_C_COMMAND:-"command find -L . -mindepth 1 \\( -path '*/\\.*' -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) -prune -o -type d -print 2> /dev/null | cut -b3-"}"
+      setopt localoptions pipefail no_aliases 2> /dev/null
+      local dir="$(eval "$cmd" | FZF_DEFAULT_OPTS="--height ${FZF_TMUX_HEIGHT:-40%} --reverse --bind=tab:down,btab:up $FZF_DEFAULT_OPTS $FZF_ALT_C_OPTS" fzf +m)"
+      if [[ -n "$dir" ]]; then
+        cd "$dir"
+      fi
+    }
+
+    fzf-cd-widget() {
+      __fzf_cd__
+      local ret=$?
+      zle reset-prompt
+      return $ret
+    }
+    zle -N fzf-cd-widget
+    bindkey '\ec' fzf-cd-widget  # Alt+C
+  fi
+fi
 
 # Load fzf-git.sh if available
 [ -f ~/fzf-git.sh/fzf-git.sh ] && source ~/fzf-git.sh/fzf-git.sh
-
-# FZF preview setup
-if command -v eza &> /dev/null && command -v $BAT_COMMAND &> /dev/null; then
-  show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; else $BAT_COMMAND -n --color=always --line-range :500 {}; fi"
-  export FZF_CTRL_T_OPTS="--preview '$show_file_or_dir_preview'"
-  export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
-  
-  _fzf_comprun() {
-    local command=$1
-    shift
-    case "$command" in
-      cd) fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
-      export|unset) fzf --preview "eval 'echo ${}'" "$@" ;;
-      ssh) fzf --preview 'dig {}' "$@" ;;
-      *) fzf --preview "$show_file_or_dir_preview" "$@" ;;
-    esac
-  }
-fi
 
 #
 # ----- Aliases -----
