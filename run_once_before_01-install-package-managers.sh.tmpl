@@ -22,6 +22,15 @@ command_exists() { command -v "$1" >/dev/null 2>&1; }
 {{- if eq .chezmoi.os "darwin" }}
 # macOS - Install Homebrew
 if ! command_exists brew; then
+    # Check if curl is available
+    if ! command_exists curl; then
+        print_status "curl not found. Installing curl..."
+        # macOS should have curl by default, but just in case
+        print_warning "curl should be available by default on macOS"
+        print_warning "If curl is missing, please install it manually or update macOS"
+        exit 1
+    fi
+    
     print_status "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     

@@ -8,26 +8,26 @@
 
 set -e
 
+# Define helper functions
 print_status() { echo -e "\033[0;34m[SHELL-TOOLS]\033[0m $1"; }
 print_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
 print_warning() { echo -e "\033[1;33m[WARNING]\033[0m $1"; }
-
-command_exists() { command -v "$1" >/dev/null 2>&1; }
+print_error() { echo -e "\033[0;31m[ERROR]\033[0m $1"; }
 
 # Install Zsh first
-if ! command_exists zsh; then
+if ! command -v zsh >/dev/null 2>&1; then
     print_status "Installing Zsh..."
     {{- if eq .chezmoi.os "darwin" }}
-    if command_exists brew; then
+    if command -v brew >/dev/null 2>&1; then
         brew install zsh
         print_success "Zsh installed via Homebrew"
     fi
     {{- else if eq .chezmoi.os "linux" }}
-    if command_exists apt-get; then
+    if command -v apt-get >/dev/null 2>&1; then
         sudo apt-get install -y zsh
-    elif command_exists dnf; then
+    elif command -v dnf >/dev/null 2>&1; then
         sudo dnf install -y zsh
-    elif command_exists pacman; then
+    elif command -v pacman >/dev/null 2>&1; then
         sudo pacman -S --noconfirm zsh
     fi
     print_success "Zsh installed"
@@ -41,13 +41,64 @@ else
     print_success "Zsh already installed"
 fi
 
+# Install curl if not available (needed for Oh My Zsh installation)
+if ! command -v curl >/dev/null 2>&1; then
+    print_status "Installing curl..."
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update && sudo apt-get install -y curl
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y curl
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm curl
+    elif command -v yum >/dev/null 2>&1; then
+        sudo yum install -y curl
+    else
+        print_error "Could not install curl automatically. Please install it manually."
+        exit 1
+    fi
+    print_success "curl installed"
+fi
+
 # Install Oh My Zsh
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
     print_status "Installing Oh My Zsh..."
+    
+    # Verify zsh is available and working
+    if ! command -v zsh >/dev/null 2>&1; then
+        print_error "Zsh is not available in PATH. Installation may have failed."
+        exit 1
+    fi
+    
+    # Install Oh My Zsh
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
-    print_success "Oh My Zsh installed"
+    
+    # Verify installation
+    if [[ -d "$HOME/.oh-my-zsh" ]]; then
+        print_success "Oh My Zsh installed"
+    else
+        print_error "Oh My Zsh installation failed"
+        exit 1
+    fi
 else
     print_success "Oh My Zsh already installed"
+fi
+
+# Install git if not available (needed for plugin installation)
+if ! command -v git >/dev/null 2>&1; then
+    print_status "Installing git..."
+    if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get install -y git
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y git
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm git
+    elif command -v yum >/dev/null 2>&1; then
+        sudo yum install -y git
+    else
+        print_error "Could not install git automatically. Please install it manually."
+        exit 1
+    fi
+    print_success "git installed"
 fi
 
 # Install Powerlevel10k
