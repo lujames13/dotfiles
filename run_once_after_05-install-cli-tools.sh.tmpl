@@ -47,32 +47,7 @@ fi
 
 {{- else if eq .chezmoi.os "linux" }}
 # Linux - Install based on distribution
-if command_exists apt-get; then
-    # Ubuntu/Debian
-    install_tool "bat" "sudo apt-get install -y bat"
-    install_tool "fdfind" "sudo apt-get install -y fd-find"
-    install_tool "fzf" "sudo apt-get install -y fzf"
-    install_tool "micro" "sudo apt-get install -y micro"
-    install_tool "ripgrep" "sudo apt-get install -y ripgrep"
-    install_tool "jq" "sudo apt-get install -y jq"
-    install_tool "tree" "sudo apt-get install -y tree"
-    install_tool "htop" "sudo apt-get install -y htop"
-    
-    # Install eza (requires manual setup for Ubuntu/Debian)
-    if ! command_exists eza; then
-        print_status "Installing eza..."
-        sudo mkdir -p /etc/apt/keyrings
-        wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
-        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
-        sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
-        sudo apt-get update
-        sudo apt-get install -y eza
-        print_success "eza installed"
-    else
-        print_success "eza already installed"
-    fi
-    
-elif command_exists dnf; then
+if command_exists dnf; then
     # Fedora
     install_tool "eza" "sudo dnf install -y eza"
     install_tool "bat" "sudo dnf install -y bat"
@@ -97,6 +72,31 @@ elif command_exists pacman; then
     install_tool "jq" "sudo pacman -S --noconfirm jq"
     install_tool "tree" "sudo pacman -S --noconfirm tree"
     install_tool "htop" "sudo pacman -S --noconfirm htop"
+    
+elif command_exists apt-get; then
+    # Ubuntu/Debian
+    install_tool "bat" "sudo apt-get install -y bat"
+    install_tool "fdfind" "sudo apt-get install -y fd-find"
+    install_tool "fzf" "sudo apt-get install -y fzf"
+    install_tool "micro" "sudo apt-get install -y micro"
+    install_tool "ripgrep" "sudo apt-get install -y ripgrep"
+    install_tool "jq" "sudo apt-get install -y jq"
+    install_tool "tree" "sudo apt-get install -y tree"
+    install_tool "htop" "sudo apt-get install -y htop"
+    
+    # Install eza (requires manual setup for Ubuntu/Debian)
+    if ! command_exists eza; then
+        print_status "Installing eza..."
+        sudo mkdir -p /etc/apt/keyrings
+        wget -qO- https://raw.githubusercontent.com/eza-community/eza/main/deb.asc | sudo gpg --dearmor -o /etc/apt/keyrings/gierens.gpg
+        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/gierens.gpg] http://deb.gierens.de stable main" | sudo tee /etc/apt/sources.list.d/gierens.list
+        sudo chmod 644 /etc/apt/keyrings/gierens.gpg /etc/apt/sources.list.d/gierens.list
+        sudo apt-get update
+        sudo apt-get install -y eza
+        print_success "eza installed"
+    else
+        print_success "eza already installed"
+    fi
 fi
 
 # Install tools that need manual installation on Linux

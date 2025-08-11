@@ -35,9 +35,9 @@ echo "📦 Package Managers:"
 {{- if eq .chezmoi.os "darwin" }}
 command -v brew >/dev/null && echo "  ✅ Homebrew: $(brew --version | head -1)"
 {{- else if eq .chezmoi.os "linux" }}
-command -v apt-get >/dev/null && echo "  ✅ apt-get available"
 command -v dnf >/dev/null && echo "  ✅ dnf available"
 command -v pacman >/dev/null && echo "  ✅ pacman available"
+command -v apt-get >/dev/null && echo "  ✅ apt-get available"
 {{- else if eq .chezmoi.os "windows" }}
 command -v winget >/dev/null && echo "  ✅ winget available"
 {{- end }}

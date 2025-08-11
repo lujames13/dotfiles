@@ -97,15 +97,7 @@ if command_exists brew; then
     fi
 fi
 {{- else if eq .chezmoi.os "linux" }}
-if command_exists apt-get; then
-    read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        print_status "Installing development tools..."
-        sudo apt-get install -y git curl wget neofetch build-essential
-        print_success "Development tools installed"
-    fi
-elif command_exists dnf; then
+if command_exists dnf; then
     read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
@@ -119,6 +111,14 @@ elif command_exists pacman; then
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         print_status "Installing development tools..."
         sudo pacman -S --noconfirm git curl wget neofetch base-devel
+        print_success "Development tools installed"
+    fi
+elif command_exists apt-get; then
+    read -p "Install common development tools (git, curl, wget, etc.)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        print_status "Installing development tools..."
+        sudo apt-get install -y git curl wget neofetch build-essential
         print_success "Development tools installed"
     fi
 fi

@@ -36,12 +36,12 @@ if ! command_exists wezterm; then
     # Install curl and wget if not available
     if ! command_exists curl; then
         print_status "Installing curl..."
-        if command_exists apt-get; then
-            sudo apt-get update && sudo apt-get install -y curl
-        elif command_exists dnf; then
+        if command_exists dnf; then
             sudo dnf install -y curl
         elif command_exists pacman; then
             sudo pacman -S --noconfirm curl
+        elif command_exists apt-get; then
+            sudo apt-get update && sudo apt-get install -y curl
         elif command_exists yum; then
             sudo yum install -y curl
         else
@@ -53,12 +53,12 @@ if ! command_exists wezterm; then
     
     if ! command_exists wget; then
         print_status "Installing wget..."
-        if command_exists apt-get; then
-            sudo apt-get install -y wget
-        elif command_exists dnf; then
+        if command_exists dnf; then
             sudo dnf install -y wget
         elif command_exists pacman; then
             sudo pacman -S --noconfirm wget
+        elif command_exists apt-get; then
+            sudo apt-get install -y wget
         elif command_exists yum; then
             sudo yum install -y wget
         else
@@ -68,16 +68,7 @@ if ! command_exists wezterm; then
         print_success "wget installed"
     fi
     
-    if command_exists apt-get; then
-        # Ubuntu/Debian
-        print_status "Installing WezTerm via apt..."
-        curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg
-        echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-        sudo apt update
-        sudo apt install -y wezterm
-        print_success "WezTerm installed via apt"
-        
-    elif command_exists dnf; then
+    if command_exists dnf; then
         # Fedora
         print_status "Installing WezTerm via dnf..."
         sudo dnf copr enable wezterm/wezterm-nightly
@@ -89,6 +80,15 @@ if ! command_exists wezterm; then
         print_status "Installing WezTerm via pacman..."
         sudo pacman -S --noconfirm wezterm
         print_success "WezTerm installed via pacman"
+        
+    elif command_exists apt-get; then
+        # Ubuntu/Debian
+        print_status "Installing WezTerm via apt..."
+        curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /usr/share/keyrings/wezterm-fury.gpg
+        echo 'deb [signed-by=/usr/share/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
+        sudo apt update
+        sudo apt install -y wezterm
+        print_success "WezTerm installed via apt"
         
     else
         # Fallback: AppImage

@@ -48,11 +48,7 @@ fi
 
 {{- else if eq .chezmoi.os "linux" }}
 # Linux - Update package managers
-if command_exists apt-get; then
-    print_status "Updating apt package list..."
-    sudo apt-get update -y
-    print_success "apt updated"
-elif command_exists dnf; then
+if command_exists dnf; then
     print_status "Updating dnf package list..."
     sudo dnf check-update -y || true
     print_success "dnf updated"
@@ -60,6 +56,10 @@ elif command_exists pacman; then
     print_status "Updating pacman package list..."
     sudo pacman -Sy
     print_success "pacman updated"
+elif command_exists apt-get; then
+    print_status "Updating apt package list..."
+    sudo apt-get update -y
+    print_success "apt updated"
 elif command_exists apk; then
     print_status "Updating apk package list..."
     sudo apk update

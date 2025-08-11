@@ -23,12 +23,12 @@ if ! command -v zsh >/dev/null 2>&1; then
         print_success "Zsh installed via Homebrew"
     fi
     {{- else if eq .chezmoi.os "linux" }}
-    if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get install -y zsh
-    elif command -v dnf >/dev/null 2>&1; then
+    if command -v dnf >/dev/null 2>&1; then
         sudo dnf install -y zsh
     elif command -v pacman >/dev/null 2>&1; then
         sudo pacman -S --noconfirm zsh
+    elif command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get install -y zsh
     fi
     print_success "Zsh installed"
     {{- end }}
@@ -44,12 +44,12 @@ fi
 # Install curl if not available (needed for Oh My Zsh installation)
 if ! command -v curl >/dev/null 2>&1; then
     print_status "Installing curl..."
-    if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get update && sudo apt-get install -y curl
-    elif command -v dnf >/dev/null 2>&1; then
+    if command -v dnf >/dev/null 2>&1; then
         sudo dnf install -y curl
     elif command -v pacman >/dev/null 2>&1; then
         sudo pacman -S --noconfirm curl
+    elif command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update && sudo apt-get install -y curl
     elif command -v yum >/dev/null 2>&1; then
         sudo yum install -y curl
     else
@@ -86,12 +86,12 @@ fi
 # Install git if not available (needed for plugin installation)
 if ! command -v git >/dev/null 2>&1; then
     print_status "Installing git..."
-    if command -v apt-get >/dev/null 2>&1; then
-        sudo apt-get install -y git
-    elif command -v dnf >/dev/null 2>&1; then
+    if command -v dnf >/dev/null 2>&1; then
         sudo dnf install -y git
     elif command -v pacman >/dev/null 2>&1; then
         sudo pacman -S --noconfirm git
+    elif command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get install -y git
     elif command -v yum >/dev/null 2>&1; then
         sudo yum install -y git
     else
