@@ -35,7 +35,6 @@ if command_exists brew; then
     install_tool "fd" "brew install fd"
     install_tool "fzf" "brew install fzf"
     install_tool "zoxide" "brew install zoxide"
-    install_tool "thefuck" "brew install thefuck"
     install_tool "micro" "brew install micro"
     install_tool "ripgrep" "brew install ripgrep"
     install_tool "jq" "brew install jq"
@@ -106,15 +105,6 @@ if ! command_exists zoxide; then
     print_success "zoxide installed"
 fi
 
-if ! command_exists thefuck; then
-    if command_exists pip3; then
-        print_status "Installing thefuck..."
-        pip3 install --user thefuck
-        print_success "thefuck installed"
-    else
-        print_warning "pip3 not found. thefuck installation skipped."
-    fi
-fi
 
 {{- end }}
 

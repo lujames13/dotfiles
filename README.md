@@ -83,7 +83,6 @@ The installation process will automatically:
 - **zoxide**: Smart `cd` replacement with frecency
 - **ripgrep**: Ultra-fast text search
 - **micro**: Modern terminal text editor
-- **thefuck**: Command correction tool
 
 ### Phase 6: Development Environment (Optional)
 Interactive installation of:
