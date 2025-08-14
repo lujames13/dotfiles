@@ -69,11 +69,24 @@ if ! command_exists wezterm; then
     fi
     
     if command_exists dnf; then
-        # Fedora
-        print_status "Installing WezTerm via dnf..."
-        sudo dnf copr enable wezterm/wezterm-nightly
-        sudo dnf install -y wezterm
-        print_success "WezTerm installed via dnf"
+        # TODO: Fedora WezTerm installation temporarily disabled due to repository issues
+        # The copr repository for wezterm-nightly appears to have connectivity/availability problems
+        # Need to investigate alternative installation methods for Fedora:
+        # - Direct RPM download from GitHub releases
+        # - Building from source
+        # - Using Flatpak version
+        # - Alternative repository sources
+        print_warning "Fedora WezTerm installation temporarily disabled due to repository issues"
+        print_warning "Please install WezTerm manually using one of these methods:"
+        print_warning "1. Download RPM from: https://github.com/wez/wezterm/releases"
+        print_warning "2. Use Flatpak: flatpak install flathub org.wezfurlong.wezterm"
+        print_warning "3. Build from source: https://wezfurlong.org/wezterm/install/source.html"
+        
+        # Fedora (temporarily disabled)
+        # print_status "Installing WezTerm via dnf..."
+        # sudo dnf copr enable wezterm/wezterm-nightly
+        # sudo dnf install -y wezterm
+        # print_success "WezTerm installed via dnf"
         
     elif command_exists pacman; then
         # Arch Linux
@@ -93,6 +106,7 @@ if ! command_exists wezterm; then
     else
         # Fallback: AppImage
         print_status "Installing WezTerm AppImage..."
+        mkdir -p ~/Applications
         WEZTERM_VERSION=$(curl -s https://api.github.com/repos/wez/wezterm/releases/latest | grep -Po '"tag_name": "\K[^"]*')
         wget -O ~/Applications/WezTerm.AppImage "https://github.com/wez/wezterm/releases/download/${WEZTERM_VERSION}/WezTerm-${WEZTERM_VERSION}-Ubuntu20.04.AppImage"
         chmod +x ~/Applications/WezTerm.AppImage
