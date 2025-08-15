@@ -17,18 +17,8 @@ fi
 export ZSH="$HOME/.oh-my-zsh"
 export EDITOR="micro"
 
-# Load Oh My Zsh
-if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
-  source "$ZSH/oh-my-zsh.sh"
-fi
-
-# Load Powerlevel10k theme (if available)
-if [[ -f "$HOME/powerlevel10k/powerlevel10k.zsh-theme" ]]; then
-  source "$HOME/powerlevel10k/powerlevel10k.zsh-theme"
-fi
-
-# Load Powerlevel10k config (if available)
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# Set theme to powerlevel10k
+ZSH_THEME="powerlevel10k/powerlevel10k"
 
 #
 # ----- Plugins -----
@@ -48,6 +38,14 @@ plugins=(
   zsh-syntax-highlighting
   zsh-history-substring-search
 )
+
+# Load Oh My Zsh
+if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
+
+# Load Powerlevel10k config (if available)
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 #
 # ----- History Setup -----
