@@ -6,8 +6,22 @@ local wezterm = require("wezterm")
 -- This will hold the configuration.
 local config = wezterm.config_builder()
 
--- Shell configuration
-config.default_prog = { "/usr/bin/zsh", "-l" }
+-- Auto-detect shell (WezTerm will use the user's default shell)
+-- This is more reliable than hardcoding paths
+-- If you specifically want zsh, uncomment and modify one of the lines below:
+{{- if eq .chezmoi.os "darwin" }}
+-- macOS: Let WezTerm auto-detect or specify zsh location
+-- config.default_prog = { "/bin/zsh", "-l" }
+-- config.default_prog = { "/opt/homebrew/bin/zsh", "-l" }  -- if installed via Homebrew
+{{- else if eq .chezmoi.os "linux" }}
+-- Linux: Let WezTerm auto-detect or specify zsh location
+-- config.default_prog = { "/usr/bin/zsh", "-l" }
+-- config.default_prog = { "/bin/zsh", "-l" }
+{{- else if eq .chezmoi.os "windows" }}
+-- Windows (WSL): Let WezTerm auto-detect or specify WSL
+-- config.default_prog = { "wsl.exe" }
+-- config.default_prog = { "wsl.exe", "-d", "Ubuntu" }  -- specific distro
+{{- end }}
 
 -- Font configuration
 config.font = wezterm.font("JetBrainsMono Nerd Font")
