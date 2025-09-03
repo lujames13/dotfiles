@@ -1,0 +1,54 @@
+#
+# zshrc.d/08-platform-specific.zsh.tmpl - Platform-Specific Configurations
+#
+
+{{- if eq .chezmoi.os "darwin" }}
+# macOS-specific configurations
+
+# Google Cloud SDK
+if [ -f "$HOME/Downloads/google-cloud-sdk/path.zsh.inc" ]; then
+  source "$HOME/Downloads/google-cloud-sdk/path.zsh.inc"
+fi
+if [ -f "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc" ]; then
+  source "$HOME/Downloads/google-cloud-sdk/completion.zsh.inc"
+fi
+
+# iTerm2 shell integration
+if [[ -n $CURSOR_TRACE_ID ]]; then
+  PROMPT_EOL_MARK=""
+  test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+  precmd() { print -Pn "\e]133;D;%?\a" }
+  preexec() { print -Pn "\e]133;C;\a" }
+fi
+
+# Homebrew
+if [[ -f "/opt/homebrew/bin/brew" ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -f "/usr/local/bin/brew" ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+
+{{- else if eq .chezmoi.os "linux" }}
+# Linux-specific configurations
+
+# Add snap to PATH if available
+if [ -d "/snap/bin" ]; then
+  export PATH="/snap/bin:$PATH"
+fi
+
+# Flatpak
+if command -v flatpak &> /dev/null; then
+  export XDG_DATA_DIRS="/var/lib/flatpak/exports/share:$HOME/.local/share/flatpak/exports/share:$XDG_DATA_DIRS"
+fi
+
+{{- else if eq .chezmoi.os "windows" }}
+# Windows (WSL) specific configurations
+
+# Windows PATH integration (if needed)
+# export PATH="$PATH:/mnt/c/Windows/System32"
+
+# WSL-specific aliases
+alias explorer="explorer.exe"
+alias code="code.exe"
+
+{{- end }}

@@ -1,0 +1,35 @@
+#
+# zshrc.d/07-runtimes.zsh.tmpl - Runtime Environment Setup
+#
+
+# Conda initialization
+{{- $condaPath := "" }}
+{{- if eq .chezmoi.os "darwin" }}
+  {{- $condaPath = "$HOME/miniconda" }}
+{{- else }}
+  {{- $condaPath = "$HOME/miniconda3" }}
+{{- end }}
+
+if [ -f "{{ $condaPath }}/bin/conda" ]; then
+  __conda_setup="$({{ $condaPath }}/bin/conda 'shell.zsh' 'hook' 2> /dev/null)"
+  if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+  else
+    if [ -f "{{ $condaPath }}/etc/profile.d/conda.sh" ]; then
+      . "{{ $condaPath }}/etc/profile.d/conda.sh"
+    else
+      export PATH="{{ $condaPath }}/bin:$PATH"
+    fi
+  fi
+  unset __conda_setup
+fi
+
+# NVM (Node Version Manager)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+
+# Use nvm default on new shells
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  nvm use default --silent 2>/dev/null || true
+fi

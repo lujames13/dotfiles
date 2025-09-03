@@ -1,0 +1,18 @@
+#
+# zshrc.d/03-platform-tools.zsh.tmpl - Platform-Specific Tool Configuration
+#
+
+{{- if eq .chezmoi.os "linux" }}
+# Linux (Fedora/Ubuntu) - using fdfind and batcat
+alias bat="batcat"
+export FD_COMMAND="fdfind"
+export BAT_COMMAND="batcat"
+{{- else if eq .chezmoi.os "darwin" }}
+# macOS - using fd and bat
+export FD_COMMAND="fd"
+export BAT_COMMAND="bat"
+{{- else if eq .chezmoi.os "windows" }}
+# Windows (WSL) - using fd.exe and bat.exe
+export FD_COMMAND="fd.exe"
+export BAT_COMMAND="bat.exe"
+{{- end }}

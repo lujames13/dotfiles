@@ -1,0 +1,39 @@
+#
+# zshrc.d/01-oh-my-zsh.zsh.tmpl - Oh My Zsh and Powerlevel10k Setup
+#
+
+[[ -o interactive ]] || return
+
+# Path to your Oh My Zsh installation
+export ZSH="$HOME/.oh-my-zsh"
+export EDITOR="micro"
+
+# Set theme to powerlevel10k
+ZSH_THEME="powerlevel10k/powerlevel10k"
+
+#
+# ----- Plugins -----
+#
+plugins=(
+  git
+  {{- if eq .chezmoi.os "darwin" }}
+  macos
+  brew
+  {{- else if eq .chezmoi.os "linux" }}
+  systemd
+  {{- else if eq .chezmoi.os "windows" }}
+  wsl
+  {{- end }}
+  zsh-completions
+  zsh-autosuggestions
+  zsh-syntax-highlighting
+  zsh-history-substring-search
+)
+
+# Load Oh My Zsh
+if [[ -f "$ZSH/oh-my-zsh.sh" ]]; then
+  source "$ZSH/oh-my-zsh.sh"
+fi
+
+# Load Powerlevel10k config (if available)
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
