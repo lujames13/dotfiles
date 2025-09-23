@@ -368,11 +368,6 @@ if [ -f "{{ $condaPath }}/bin/conda" ]; then
   unset __conda_setup
 fi
 
-# Source .bash_profile if it exists, for compatibility
-if [ -f ~/.bash_profile ]; then
-  . ~/.bash_profile
-fi
-
 # NVM (Node Version Manager)
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
