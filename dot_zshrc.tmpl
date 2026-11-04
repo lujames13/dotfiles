@@ -343,6 +343,28 @@ export BAT_THEME=1337
 export PATH="$PATH:$HOME/.local/bin"
 
 #
+# ----- SSH Agent Setup -----
+#
+# Automatically start ssh-agent and load GitHub SSH key
+if [ -z "$SSH_AUTH_SOCK" ]; then
+  # Check if ssh-agent is already running
+  if pgrep -u "$USER" ssh-agent > /dev/null; then
+    export SSH_AUTH_SOCK=$(find /tmp -maxdepth 2 -type s -name "agent.*" -user "$USER" 2>/dev/null | head -1)
+    export SSH_AGENT_PID=$(pgrep -u "$USER" ssh-agent)
+  fi
+  
+  # If still no agent, start one
+  if [ -z "$SSH_AUTH_SOCK" ]; then
+    eval "$(ssh-agent -s)" > /dev/null
+  fi
+fi
+
+# Load GitHub SSH key if it exists and isn't already loaded
+if [ -f "$HOME/.ssh/github_lujames13" ] && ! ssh-add -l | grep -q "github_lujames13"; then
+  ssh-add "$HOME/.ssh/github_lujames13" 2>/dev/null
+fi
+
+#
 # ----- Platform-Specific Runtime Environments -----
 #
 
@@ -406,6 +428,8 @@ fi
 if [ -d "/snap/bin" ]; then
   export PATH="/snap/bin:$PATH"
 fi
+# snap wrapper may fail under WSL ("cannot track application process"); keep ~/.local/bin ahead of /snap/bin
+export PATH="$HOME/.local/bin:$PATH"
 
 # Flatpak
 if command -v flatpak &> /dev/null; then
@@ -426,3 +450,12 @@ alias code="code.exe"
 
 # Load any local customizations
 [ -f ~/.zshrc.local ] && source ~/.zshrc.local
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f "$HOME/code/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/code/google-cloud-sdk/path.zsh.inc"; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f "$HOME/code/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/code/google-cloud-sdk/completion.zsh.inc"; fi
+
+# kubectl completion
+[[ $commands[kubectl] ]] && source <(kubectl completion zsh)
