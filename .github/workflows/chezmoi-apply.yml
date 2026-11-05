@@ -52,15 +52,13 @@ jobs:
       - name: zsh syntax check
         run: zsh -n "$HOME/.zshrc"
 
-      # Warn-only until the first green run; then flip continue-on-error to false.
       - name: Static check of rendered run_* scripts (never executed)
-        continue-on-error: true
         run: |
           fail=0
           for f in "$GITHUB_WORKSPACE"/run_*.tmpl; do
             out="$RUNNER_TEMP/$(basename "$f" .tmpl)"
             chezmoi execute-template < "$f" > "$out"
             bash -n "$out" || { echo "::error file=$f::bash -n failed"; fail=1; }
-            shellcheck -s bash -S error "$out" || echo "::warning file=$f::shellcheck reported errors"
+            shellcheck -s bash -S error "$out" || { echo "::error file=$f::shellcheck reported errors"; fail=1; }
           done
           exit $fail
