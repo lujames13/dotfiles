@@ -47,8 +47,9 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           # claude_args: '--allowed-tools Bash(gh pr *)'
-          # Read-only web access for research spikes, scoped to rbw sources/docs.
-          claude_args: '--allowedTools "WebSearch,WebFetch(domain:github.com),WebFetch(domain:raw.githubusercontent.com),WebFetch(domain:docs.rs),WebFetch(domain:bitwarden.com)"'
+          # Read-only web access for research. Bare tool names on purpose: scoped forms
+          # don't clear the action's default disable (anthropics/claude-code-action#690).
+          claude_args: '--allowedTools "WebSearch,WebFetch"'
 
       # Notify Side Project (Grok Bot webhook routine) at the end of every run,
       # including failures. Payload carries ids and status only; the bot reads
