@@ -1,0 +1,66 @@
+name: chezmoi apply (clean HOME)
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Install chezmoi binary (official release only)
+        run: |
+          sh -c "$(curl -fsLS get.chezmoi.io)" -- -b "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Create temp HOME
+        run: |
+          echo "HOME=$(mktemp -d)" >> "$GITHUB_ENV"
+
+      - name: chezmoi init
+        run: chezmoi init "$GITHUB_WORKSPACE" --no-tty </dev/null
+
+      - name: chezmoi apply (scripts excluded)
+        run: |
+          # Dry run first: logs prove no run_* script is executed.
+          chezmoi apply --dry-run --verbose --exclude=scripts --no-tty
+          chezmoi apply --exclude=scripts --no-tty
+
+      - name: chezmoi verify (scripts excluded)
+        run: chezmoi verify --exclude=scripts
+
+      - name: Repo-meta files must not be managed
+        run: |
+          managed="$(chezmoi managed)"
+          echo "$managed"
+          if echo "$managed" | grep -Ex '(CLAUDE|README|DEPENDENCY_FIXES)\.md|(docs|tests|scripts)(/.*)?'; then
+            echo "::error::repo-meta files are managed; check .chezmoiignore"
+            exit 1
+          fi
+
+      - name: Install zsh and shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends zsh shellcheck
+
+      - name: zsh syntax check
+        run: zsh -n "$HOME/.zshrc"
+
+      # Warn-only until the first green run; then flip continue-on-error to false.
+      - name: Static check of rendered run_* scripts (never executed)
+        continue-on-error: true
+        run: |
+          fail=0
+          for f in "$GITHUB_WORKSPACE"/run_*.tmpl; do
+            out="$RUNNER_TEMP/$(basename "$f" .tmpl)"
+            chezmoi execute-template < "$f" > "$out"
+            bash -n "$out" || { echo "::error file=$f::bash -n failed"; fail=1; }
+            shellcheck -s bash -S error "$out" || echo "::warning file=$f::shellcheck reported errors"
+          done
+          exit $fail

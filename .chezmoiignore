@@ -1,0 +1,7 @@
+# Repo-meta files: live in the source repo, must never be applied to $HOME
+CLAUDE.md
+README.md
+DEPENDENCY_FIXES.md
+docs
+tests
+scripts
