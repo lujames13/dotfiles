@@ -24,7 +24,7 @@ jobs:
           echo "HOME=$(mktemp -d)" >> "$GITHUB_ENV"
 
       - name: chezmoi init
-        run: chezmoi init --source="$GITHUB_WORKSPACE" --no-tty </dev/null
+        run: chezmoi init "$GITHUB_WORKSPACE" --no-tty </dev/null
 
       - name: chezmoi apply (scripts excluded)
         run: |
