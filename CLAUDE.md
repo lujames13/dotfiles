@@ -115,3 +115,20 @@ These rules apply to every agent session in this repo.
 ### Guardrails are a speed bump, not a boundary
 
 `.claude/settings.json` denies `Read(./.env*)`, `Bash(rbw:*)` and `Bash(srun:*)`. This deny list is a **speed bump, not a boundary**: it can be bypassed via scripts or `zsh -ic`. The real barrier is a locked vault.
+
+## Reporting protocol
+
+Every response on an issue or PR MUST end with exactly one status marker on its own line:
+
+```
+<!-- agent-status: STATUS -->
+```
+
+STATUS is one of:
+- `plan-ready`: you produced a plan and are waiting for approval before implementing.
+- `done`: the requested work is complete (branch pushed / PR opened as asked).
+- `needs-decision`: you need a decision; list each under `## Decisions Needed` with options, your recommendation, and whether it is easy to reverse.
+- `blocked`: you cannot proceed; explain the obstacle and what you tried.
+
+When asked for a plan, do NOT start implementing; end with `plan-ready`.
+Unless the triggering comment says otherwise, start each new issue with a plan and end with `plan-ready`.
