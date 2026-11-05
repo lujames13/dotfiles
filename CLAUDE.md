@@ -98,3 +98,20 @@ All installation scripts:
 - Verify command availability before use
 - Never execute arbitrary remote code without verification
 - Support offline installation where possible
+
+## Agent rules (secrets)
+
+These rules apply to every agent session in this repo.
+
+- Never read `.env*`, the gh CLI hosts/token file, the Claude Code credentials file, shell history, or rbw config/data directories.
+- Never run `rbw register|login|unlock|get` against a real vault.
+- Never run `srun -- claude` (it would put every secret into the agent's own environment).
+- Never print, log, or commit any secret value.
+- Tests use stubs and dummy values only.
+- One issue = one branch = one PR. Reference the issue in the PR.
+- Start every PR with a written plan in the PR description before writing code.
+- Stop and ask the human for any manual step (vault login, real-machine verification).
+
+### Guardrails are a speed bump, not a boundary
+
+`.claude/settings.json` denies `Read(./.env*)`, `Bash(rbw:*)` and `Bash(srun:*)`. This deny list is a **speed bump, not a boundary**: it can be bypassed via scripts or `zsh -ic`. The real barrier is a locked vault.
